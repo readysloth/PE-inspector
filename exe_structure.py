@@ -34,6 +34,7 @@ def get_format_names(format: t.List[Field]) -> t.List[str]:
 
 
 class FileFormat:
+    _TABLE_HORIZONTAL_LEN = 30+30+4+3*3+len('Description')
     def __init__(self, format: t.List[Field],  _bytes: bytes):
         self.structure = format
         self._format_names = get_format_names(format)
@@ -45,7 +46,7 @@ class FileFormat:
 
     def __str__(self) -> str:
         return f'{"Name": ^30} : {"Value": ^30} : {"Size": ^4} : Description\n' \
-             + '-'*(30+30+4+3*3+len('Description')) \
+             + '-'*(FileFormat._TABLE_HORIZONTAL_LEN) \
              + '\n' \
              + '\n'.join([str(f) for f in self.structure])
 
@@ -77,6 +78,10 @@ class MZ(FileFormat):
 
     def __init__(self, _bytes: bytes):
         super().__init__(MZ.FORMAT, _bytes)
+
+
+    def __str__(self) -> str:
+        return f'{"MS-DOS header":_^{FileFormat._TABLE_HORIZONTAL_LEN}}\n' + str(super().__str__())
 
 
 class PE(FileFormat):
@@ -127,3 +132,7 @@ class PE(FileFormat):
     def __init__(self, _bytes: bytes):
         self.mz = MZ(_bytes)
         super().__init__(PE.FORMAT, _bytes[self.mz.e_lfanew:])
+
+
+    def __str__(self) -> str:
+        return f'{"PE header":_^{FileFormat._TABLE_HORIZONTAL_LEN}}\n' + str(super().__str__())
