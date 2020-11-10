@@ -45,7 +45,7 @@ class FileFormat:
 
     def __str__(self) -> str:
         return f'{"Name": ^30} : {"Value": ^30} : {"Size": ^4} : Description\n' \
-             + '-'*(30+16+4+3*3+len('Description')) \
+             + '-'*(30+30+4+3*3+len('Description')) \
              + '\n' \
              + '\n'.join([str(f) for f in self.structure])
 
@@ -80,15 +80,48 @@ class MZ(FileFormat):
 
 
 class PE(FileFormat):
+    MACHINE_TYPES = {0x0 : 'The content of this field is assumed to be applicable to any machine type',
+                     0x1d3 : 'Matsushita AM33',
+                     0x8664 : 'x64',
+                     0x1c0 : 'ARM little endian',
+                     0xaa64 : 'ARM64 little endian',
+                     0x1c4 : 'ARM Thumb-2 little endian',
+                     0xebc : 'EFI byte code',
+                     0x14c : 'Intel 386 or later processors and compatible processors',
+                     0x200 : 'Intel Itanium processor family',
+                     0x9041 : 'Mitsubishi M32R little endian',
+                     0x266 : 'MIPS16',
+                     0x366 : 'MIPS with FPU',
+                     0x466 : 'MIPS16 with FPU',
+                     0x1f0 : 'Power PC little endian',
+                     0x1f1 : 'Power PC with floating point support',
+                     0x166 : 'MIPS little endian',
+                     0x5032 : 'RISC-V 32-bit address space',
+                     0x5064 : 'RISC-V 64-bit address space',
+                     0x5128 : 'RISC-V 128-bit address space',
+                     0x1a2 : 'Hitachi SH3',
+                     0x1a3 : 'Hitachi SH3 DSP',
+                     0x1a6 : 'Hitachi SH4',
+                     0x1a8 : 'Hitachi SH5',
+                     0x1c2 : 'Thumb',
+                     0x169 : 'MIPS little-endian WCE v2'
+                    }
 
-    FORMAT = [Field('mMagic'                , '4s' , 'PE\0\0 or 0x00004550'),
-              Field('mMachine'              , 'H'),
-              Field('mNumberOfSections'     , 'H'),
-              Field('mTimeDateStamp'        , '4s',
+
+    FORMAT = [Field('mMagic', '4s', 'PE\0\0 or 0x00004550'),
+              Field('mMachine', 'H', 'The number that identifies the type of target machine',
+                    value_fmt=lambda v: PE.MACHINE_TYPES[v][:30]),
+              Field('mNumberOfSections', 'H', 'Indicates the size of the section table'),
+              Field('mTimeDateStamp',
+                    '4s',
+                    'When the file was created.',
                     value_fmt=lambda v: datetime.utcfromtimestamp(int.from_bytes(v, 'little')).strftime('%H:%M:%S %d-%m-%Y')),
-              Field('mPointerToSymbolTable' , '4s'),
-              Field('mSizeOfOptionalHeader' , 'H'),
-              Field('mCharacteristics'      , 'H'),
+              Field('mPointerToSymbolTable',
+                    '4s',
+                    'The file offset of the COFF symbol table, or zero if no symbol table is present',
+                    value_fmt=lambda v: int.from_bytes(v, 'little')),
+              Field('mSizeOfOptionalHeader', 'H', 'The size of the optional header'),
+              Field('mCharacteristics', 'H', 'The flags that indicate the attributes of the file'),
               ]
 
     def __init__(self, _bytes: bytes):
